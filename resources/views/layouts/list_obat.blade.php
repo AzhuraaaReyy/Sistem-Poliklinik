@@ -43,6 +43,7 @@
                                 <th>Nama Obat</th>
                                 <th>Kemasan</th>
                                 <th>Harga</th>
+                                <th>Deskripsi Obat</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -52,6 +53,7 @@
                                 <td>{{ $obat->nama_obat }}</td>
                                 <td>{{ $obat->kemasan }}</td>
                                 <td>Rp{{ number_format($obat->harga, 2, ',', '.') }}</td>
+                                <td>{{ $obat->deskripsi }}</td>
                                 <td>
                                     <a href="{{ route('obat.edit', $obat->id) }}" class="btn btn-sm btn-warning">Edit</a>
                                     <form action="{{ route('obat.destroy', $obat->id) }}" method="POST" style="display:inline-block;">

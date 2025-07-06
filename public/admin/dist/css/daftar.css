@@ -1,0 +1,53 @@
+/* Styling untuk form secara keseluruhan */
+.form-styling {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Styling untuk tombol */
+.btn-styling {
+    width: 48%;
+    font-size: 16px;
+    padding: 12px 20px;
+}
+
+/* Styling untuk form-control */
+.form-control {
+    font-size: 16px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Styling untuk seleksi dropdown */
+.form-select {
+    font-size: 16px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Styling untuk elemen alert */
+.alert {
+    border-radius: 6px;
+    padding: 15px;
+}
+
+/* Styling untuk pesan sukses */
+.alert-success {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Styling untuk pesan error */
+.alert-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Membuat form-actions lebih rapi dengan jarak antar tombol */
+.form-actions {
+    margin-top: 20px;
+}

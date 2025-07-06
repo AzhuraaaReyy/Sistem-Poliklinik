@@ -18,7 +18,19 @@
         <div class="card">
             <div class="card-body register-card-body">
                 <p class="login-box-msg">Register a new membership</p>
-
+                @if ($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Terjadi kesalahan!</strong>
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                @endif
                 <form action="{{ route('daftar') }}" method="post" onsubmit="return validatePasswords()">
                     @csrf
                     <div class="input-group mb-3">
@@ -36,6 +48,11 @@
                                 <span class="fas fa-envelope"></span>
                             </div>
                         </div>
+                        @error('email')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                        @enderror
                     </div>
                     <div class="input-group mb-3">
                         <input type="password" name="password" class="form-control" placeholder="Password" required>
@@ -54,6 +71,11 @@
                                 <span class="fas fa-lock"></span>
                             </div>
                         </div>
+                        @error('password')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                        @enderror
                     </div>
                     <small id="password-error" style="color:red; display:none;">Password tidak cocok!</small>
                     <div class="input-group mb-3">
@@ -65,12 +87,30 @@
                         </div>
                     </div>
                     <div class="input-group mb-3">
-                        <input type="text" name="no_hp" class="form-control" placeholder="Nomor HP" pattern="^\d{12,13}$" title="Nomor HP harus terdiri dari 12 atau 13 digit angka" required>
+                        <input type="text" name="no_hp" class="form-control" placeholder="Nomor HP" required>
                         <div class="input-group-append">
                             <div class="input-group-text">
                                 <span class="fas fa-phone"></span>
                             </div>
                         </div>
+                        @error('no_hp')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                        @enderror
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="text" name="no_ktp" class="form-control" placeholder="Nomor KTP" required>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-id-card"></span>
+                            </div>
+                        </div>
+                        @error('no_ktp')
+                        <div class="invalid-feedback">
+                            {{ $message }}
+                        </div>
+                        @enderror
                     </div>
 
                     <div class="row">
@@ -118,7 +158,7 @@
                     </a>
                 </div>
                 <span style="color:gray;">Already have an acount?</span>
-                <a href="/" class="register"> Login </a>
+                <a href="/login" class="register"> Login </a>
             </div>
             <!-- /.form-box -->
         </div><!-- /.card -->

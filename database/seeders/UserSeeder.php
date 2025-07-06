@@ -46,6 +46,14 @@ class UserSeeder extends Seeder
                 'email' => 'yudi@gmail.com',
                 'password' => 'password',
             ],
+            [
+                'nama' => 'paijo',
+                'no_hp' => '0987654332',
+                'alamat' => 'semarang kota',
+                'role' => 'admin',
+                'email' => 'paijo@gmail.com',
+                'password' => '123456',
+            ],
         ];
         foreach ($data as $d) {
             User::create([

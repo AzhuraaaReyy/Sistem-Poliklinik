@@ -8,13 +8,25 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DetailPeriksa extends Model
 {
+    protected $table = 'detail_periksas';
+  
+
     protected $fillable = [
         'id_periksa',
         'id_obat',
+        'jumlah',
+        'subtotal',
     ];
+    protected function casts(): array
+    {
+        return [
+            'jumlah' => 'integer',
+            'subtotal' => 'float',
+        ];
+    }
 
     public function periksa(): BelongsTo
-    { 
+    {
         return $this->belongsTo(periksa::class, 'id_periksa');
     }
 
@@ -22,6 +34,4 @@ class DetailPeriksa extends Model
     {
         return $this->belongsTo(Obat::class, 'id_obat');
     }
-
-    
 }
