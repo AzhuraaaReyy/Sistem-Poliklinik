@@ -1,22 +1,17 @@
 <?php
 
 use App\Http\Controllers\AdminController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ObatController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DokterController;
-use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\AuthSocialiteController;
-use App\Http\Controllers\ResetPasswordController;
-use App\Http\Controllers\ProfileController;
-use App\Models\User;
+use App\Http\Controllers\DokterController;
+use App\Http\Controllers\ObatController;
 use App\Http\Controllers\PasienController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PeriksaController;
 use App\Http\Controllers\PoliController;
-use App\Models\daftar_poliModel;
-use App\Models\periksa;
-
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\ResetPasswordController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('home');
@@ -25,26 +20,24 @@ Route::get('/email', function () {
     return view('layouts.emailverification');
 });
 
-Route::get('/profile', function () {
-    return view('layouts.profile');
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', function () {
+        return view('layouts.profile');
+    });
+
+    Route::get('/editprofile', function () {
+        return redirect('/profile');
+    });
 });
-
-Route::get('/editprofile', function () {
-    return view('layouts.editProfile');
-});
-
-
-
-
 
 Route::get('/login', [AuthController::class, 'form'])->name('login');
-Route::post('/login', [AuthController::class, 'authenticate']);
+Route::post('/login', [AuthController::class, 'authenticate'])->middleware('throttle:10,1');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/register', [RegisterController::class, 'formRegister'])->name('daftar');
-Route::post('/register', [RegisterController::class, 'register']);
+Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:5,1');
 Route::middleware(['auth', 'role:dokter'])->group(function () {
     Route::get('/obat', [ObatController::class, 'index'])->name('obat.index');
-    Route::get('/list-obat', [ObatController::class, 'obat'])->name('obat.index');
+    Route::get('/list-obat', [ObatController::class, 'obat'])->name('obat.list');
     Route::get('/obat/{id}/edit', [ObatController::class, 'edit'])->name('obat.edit');
     Route::put('/obat/{id}', [ObatController::class, 'update'])->name('obat.update');
     Route::post('/obat', [ObatController::class, 'store'])->name('obat.store');
@@ -69,7 +62,6 @@ Route::middleware(['auth', 'role:pasien'])->group(function () {
     Route::get('/daftar-poli', [PoliController::class, 'index'])->name('daftar.poli');
     Route::post('/daftar-poli', [PoliController::class, 'daftar'])->name('poli-daftar.create');
     Route::get('/poli', [PoliController::class, 'poli'])->name('poli');
-    Route::get('/detail-periksa', [PeriksaController::class, 'lihatDetailPeriksa']);
     Route::get('/detail-periksa/{id}', [PeriksaController::class, 'lihatDetailPeriksa'])->name('lihat.detail.periksa');
     Route::get('/list-dokter', [PeriksaController::class, 'index']);
 });
@@ -103,30 +95,27 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin-edit-poli/{id}', [AdminController::class, 'editpoli'])->name('admin.editpoli');
     Route::delete('/admin/deletepoli/{id}', [AdminController::class, 'deletepoli'])->name('admin.deletepoli');
 });
-#Sign In with Google
+// Sign In with Google
 Route::get(
     '/auth/redirect',
     [AuthSocialiteController::class, 'redirect']
-);
+)->middleware('throttle:10,1');
 Route::get(
     '/auth/{google}/callback',
     [AuthSocialiteController::class, 'callback']
-);
+)->middleware('throttle:10,1');
 
-
-#Forgot Password
+// Forgot Password
 Route::get('/forgot-password', function () {
-    return view('layouts.recovery_password');
+    return view('layouts.emailverification');
 })->middleware('guest')->name('password.request');
-Route::post('/forgot-password', [ResetPasswordController::class, 'verifyEmail'])->middleware('guest')->name('password.email');
+Route::post('/forgot-password', [ResetPasswordController::class, 'verifyEmail'])->middleware(['guest', 'throttle:5,1'])->name('password.email');
 Route::get('/reset-password/{token}', [ResetPasswordController::class, 'resetPassword'])->middleware('guest')->name('password.reset');
-Route::post('/reset-password', [ResetPasswordController::class, 'UpdatePassword'])->middleware('guest')->name('password.update');
+Route::post('/reset-password', [ResetPasswordController::class, 'UpdatePassword'])->middleware(['guest', 'throttle:5,1'])->name('password.update');
 
-#edit profile
+// edit profile
 
 Route::middleware(['auth'])->group(function () {
     Route::post('/upload-cover-photo', [ProfileController::class, 'uploadCoverPhoto'])->name('upload.cover.photo');
-    Route::get('/obat', [DashboardController::class, 'count_user'])->name('user.count.user');
-    Route::get('/dokter', [DashboardController::class, 'count_user'])->name('user.user');
     Route::put('/updateProfile', [ProfileController::class, 'updateProfile'])->name('profile.update');
 });

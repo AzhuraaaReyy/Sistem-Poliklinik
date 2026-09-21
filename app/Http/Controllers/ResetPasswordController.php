@@ -15,13 +15,13 @@ class ResetPasswordController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
-        $status = Password::sendResetLink(
+        Password::sendResetLink(
             $request->only('email')
         );
 
-        return $status === Password::ResetLinkSent
-            ? back()->with(['status' => __($status)])
-            : back()->withErrors(['email' => __($status)]);
+        return back()->with([
+            'status' => 'Jika email tersebut terdaftar, kami telah mengirimkan tautan reset password.',
+        ]);
     }
 
     public function resetPassword(Request $request, String $token)

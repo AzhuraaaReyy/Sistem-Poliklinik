@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Laravel\Socialite\Facades\Socialite;
+use App\Models\pasienModel;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use App\Models\periksa;
-use Carbon\Carbon;
-use App\Models\pasienModel;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthSocialiteController extends Controller
 {
@@ -20,17 +17,21 @@ class AuthSocialiteController extends Controller
 
     public function callback()
     {
-        $noKtp = str_pad(random_int(1000000000000000, 9999999999999999), 16, '0', STR_PAD_LEFT);
         $SosialUser = Socialite::driver('google')->user();
         $registeredUser = User::where('google_id', $SosialUser->id)->first();
 
-        if (!$registeredUser) {
-            $newUser = User::updateOrCreate([
+        if (! $registeredUser) {
+            if (User::where('email', $SosialUser->email)->exists()) {
+                return redirect('/login')->withErrors([
+                    'email' => 'Email ini sudah terdaftar. Silakan masuk menggunakan password Anda.',
+                ]);
+            }
+
+            $newUser = User::create([
                 'google_id' => $SosialUser->id,
-            ], [
                 'nama' => $SosialUser->name,
                 'email' => $SosialUser->email,
-                'password' => Hash::make('password'),
+                'password' => Str::password(32),
                 'google_token' => $SosialUser->token,
                 'google_refresh_token' => $SosialUser->refreshToken,
                 'no_hp' => '-',
@@ -39,24 +40,24 @@ class AuthSocialiteController extends Controller
                 'photo' => '',
                 'cover_photo' => '',
             ]);
-            // Buat data pasien
-            pasienModel::firstOrCreate(
-                [
-                    'user_id' => $newUser->id,
-                ],
-                [
-                    'no_ktp' => $noKtp,
-                    'no_rm' => now()->format('YmdHis'),
-                ]
-            );
-            
-            Auth::login($newUser);
 
-            return redirect('/dokter');
+            // Buat data pasien
+            if (! pasienModel::where('user_id', $newUser->id)->exists()) {
+                pasienModel::createWithNoRm([
+                    'user_id' => $newUser->id,
+                    'no_ktp' => str_pad((string) random_int(0, 9999999999999999), 16, '0', STR_PAD_LEFT),
+                ]);
+            }
+
+            $registeredUser = $newUser;
         }
 
         Auth::login($registeredUser);
 
-        return redirect('/dokter');
+        return redirect(match ($registeredUser->role) {
+            'dokter' => '/obat',
+            'admin' => '/iniadmin',
+            default => '/dokter',
+        });
     }
 }

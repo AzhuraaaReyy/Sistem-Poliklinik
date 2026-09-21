@@ -38,14 +38,6 @@ class User extends Authenticatable
     ];
 
 
-    // menggunakan hasmany karena merupakan parent atau induk,karena id user direlasikan ke periksa
-    //relasi ke periksa sebagai pasien
-
-    public function pasien(): HasMany
-    {
-        return $this->hasMany(periksa::class, 'id_pasien');
-    }
-
     //relasi ke periksa sebagai dokter
     public function dokter(): HasMany
     {

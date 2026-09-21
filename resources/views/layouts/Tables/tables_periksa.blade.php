@@ -32,7 +32,7 @@
             <tr>
                 <td>{{ $loop->iteration }}</td>
                 <td>{{ $periksa->pasienModels->user->nama ?? '-' }}</td> {{-- Nama pasien --}}
-                <td>{{ \Carbon\Carbon::parse($periksa->tgl_periksa ?? 'N/A')->format('d-m-Y') }}</td>
+                <td>{{ $periksa->tgl_periksa ? \Carbon\Carbon::parse($periksa->tgl_periksa)->format('d-m-Y') : '-' }}</td>
                 <td>
                     @if ($periksa->waktu_diperiksa)
                     {{ \Carbon\Carbon::parse($periksa->waktu_diperiksa)->setTimezone('Asia/Jakarta')->format('H:i') }}

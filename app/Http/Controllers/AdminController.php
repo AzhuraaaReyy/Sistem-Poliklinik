@@ -6,10 +6,10 @@ use App\Models\dokterModel;
 use App\Models\jadwal_periksaModel;
 use App\Models\Obat;
 use App\Models\pasienModel;
-use Illuminate\Http\Request;
-use App\Models\User;
 use App\Models\periksa;
 use App\Models\poliModel;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class AdminController extends Controller
@@ -20,6 +20,7 @@ class AdminController extends Controller
         $countpasien = User::where('role', 'pasien')->count();
         $countdokter = User::where('role', 'dokter')->count();
         $countperiksa = periksa::count();
+
         return view('layouts.admin', compact('countusers', 'countpasien', 'countdokter', 'countperiksa'));
     }
 
@@ -42,18 +43,21 @@ class AdminController extends Controller
     public function formpoli()
     {
         $jadwal = jadwal_periksaModel::with('dokter.user', 'poli')->get();
+
         return view('layouts.form.kelola_poli', compact('jadwal'));
     }
 
     public function formobat()
     {
         $obats = Obat::all();
+
         return view('layouts.form.kelola_obat', compact('obats'));
     }
 
     public function tambah_dokter()
     {
         $poli = poliModel::all();
+
         return view('layouts.form.tambah_dokter', compact('poli'));
     }
 
@@ -70,28 +74,32 @@ class AdminController extends Controller
             'no_hp.unique' => 'Nomor HP sudah terdaftar!',
         ]);
 
+        $plainPassword = \Illuminate\Support\Str::password(16);
+
         $user = User::create([
             'nama' => $request->nama,
             'alamat' => $request->alamat,
             'email' => $request->email,
             'no_hp' => $request->no_hp,
             'role' => 'dokter',
-            'password' => 'default'
+            'password' => $plainPassword,
         ]);
 
         dokterModel::create([
             'user_id' => $user->id,
             'gelar' => $request->gelar,
-            'id_poli' => $request->id_poli
+            'id_poli' => $request->id_poli,
 
         ]);
-        return redirect()->route('admin.dokter')->with('success', 'Data Dokter Berhasil ditambahkan');
+
+        return redirect()->route('admin.dokter')->with('success', 'Data Dokter Berhasil ditambahkan. Password sementara: '.$plainPassword);
     }
 
     public function editdokter($id)
     {
         $poli = poliModel::all();
-        $dokter = dokterModel::with('user', 'poli')->find($id);
+        $dokter = dokterModel::with('user', 'poli')->findOrFail($id);
+
         return view('layouts.form.edit_dokter', compact('poli', 'dokter'));
     }
 
@@ -103,7 +111,7 @@ class AdminController extends Controller
             'nama' => 'required|string',
             'gelar' => 'required|string',
             'alamat' => 'required|string',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => 'required|email|unique:users,email,'.$user->id,
             'no_hp' => 'required|numeric|digits_between:12,13',
             'id_poli' => 'required|exists:poli,id',
         ]);
@@ -119,7 +127,7 @@ class AdminController extends Controller
         $dokter->update([
 
             'gelar' => $request->gelar,
-            'id_poli' => $request->id_poli
+            'id_poli' => $request->id_poli,
         ]);
 
         return redirect()->route('admin.dokter')->with('success', 'Data Berhasil di Update');
@@ -134,13 +142,12 @@ class AdminController extends Controller
             if ($user) {
                 $user->delete();
             }
+
             return redirect()->route('admin.dokter')->with('success', 'Data Berhasil Dihapus');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.dokter')->with('error', 'Data Gagal Dihapus');
         }
     }
-
-
 
     public function tambah_pasien()
     {
@@ -151,6 +158,7 @@ class AdminController extends Controller
     public function editpasien($id)
     {
         $pasien = pasienModel::with('user')->findOrFail($id);
+
         return view('layouts.form.edit_pasien', compact('pasien'));
     }
 
@@ -162,7 +170,7 @@ class AdminController extends Controller
             'nama' => 'required|string',
             'no_ktp' => 'required|numeric|digits:16',
             'alamat' => 'required|string',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => 'required|email|unique:users,email,'.$user->id,
             'no_hp' => 'required|numeric|digits_between:12,13',
 
         ]);
@@ -195,8 +203,10 @@ class AdminController extends Controller
         ], [
             'no_ktp.unique' => 'No KTP Sudah Terdaftar!',
             'no_hp.unique' => 'No HandPhone Sudah Terdaftar!',
-            'email.unique' => 'Email Sudah Terdaftar!'
+            'email.unique' => 'Email Sudah Terdaftar!',
         ]);
+
+        $plainPassword = \Illuminate\Support\Str::password(16);
 
         $user = User::create([
             'nama' => $request->nama,
@@ -204,17 +214,15 @@ class AdminController extends Controller
             'email' => $request->email,
             'no_hp' => $request->no_hp,
             'role' => 'pasien',
-            'password' => 'default'
+            'password' => $plainPassword,
         ]);
 
-        $rekam = pasienModel::generateNoRM();
-
-        pasienModel::create([
+        pasienModel::createWithNoRm([
             'user_id' => $user->id,
             'no_ktp' => $request->no_ktp,
-            'no_rm' => $rekam
         ]);
-        return redirect()->route('admin.pasien')->with('success', 'Data Pasien Berhasil ditambahkan');
+
+        return redirect()->route('admin.pasien')->with('success', 'Data Pasien Berhasil ditambahkan. Password sementara: '.$plainPassword);
     }
 
     public function deletepasien($id)
@@ -226,21 +234,24 @@ class AdminController extends Controller
             if ($user) {
                 $user->delete();
             }
+
             return redirect()->route('admin.pasien')->with('success', 'Data Berhasil Dihapus');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.pasien')->with('error', 'Data Gagal Dihapus');
         }
     }
 
-
     public function tambah_obat()
     {
         $obats = Obat::all();
+
         return view('layouts.form.tambah_obat', compact('obats'));
     }
+
     public function editobat($id)
     {
         $obat = Obat::findOrFail($id);
+
         return view('layouts.form.edit_obat', compact('obat'));
     }
 
@@ -259,6 +270,7 @@ class AdminController extends Controller
             'harga' => $request->harga,
             'deskripsi' => $request->deskripsi,
         ]);
+
         return redirect()->route('admin.obat')->with('success', 'Data Obat Berhasil Ditambahkan ');
     }
 
@@ -271,37 +283,41 @@ class AdminController extends Controller
             'deskripsi' => 'required|string',
         ]);
 
-        $obat = Obat::find($id);
+        $obat = Obat::findOrFail($id);
         $obat->update([
             'nama_obat' => $request->nama_obat,
             'kemasan' => $request->kemasan,
             'harga' => $request->harga,
-            'deskripsi' => $request->deskripsi
+            'deskripsi' => $request->deskripsi,
         ]);
 
         return redirect()->route('admin.obat')->with('success', 'Data Berhasil di Update');
     }
+
     public function deleteobat($id)
     {
         try {
             $obat = Obat::findOrFail($id);
             $obat->delete();
+
             return redirect()->route('admin.obat')->with('success', 'Data Berhasil Dihapus');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.obat')->with('error', 'Data Gagal Dihapus');
         }
     }
 
-
     public function tambah_poli()
     {
         $poli = poliModel::all();
+
         return view('layouts.form.tambah_poli', compact('poli'));
     }
+
     public function tambah_jadwalpoli()
     {
         $poli = poliModel::all();
         $dokters = dokterModel::with('user')->get();
+
         return view('layouts.form.tambah_jadwal', compact('dokters', 'poli'));
     }
 
@@ -322,13 +338,15 @@ class AdminController extends Controller
             'nama_poli' => $request->nama_poli,
             'spesialis' => $request->spesialis,
         ]);
+
         return redirect()->route('admin.poli')->with('success', 'Data Berhasil Ditambahkan');
     }
+
     public function storejadwal(Request $request)
     {
         $request->validate([
-            'id_dokter' => 'required',
-            'id_poli' => 'required',
+            'id_dokter' => 'required|exists:dokter,id',
+            'id_poli' => 'required|exists:poli,id',
             'hari' => 'required',
             'jam_mulai' => 'required',
             'jam_selesai' => 'required',
@@ -355,14 +373,15 @@ class AdminController extends Controller
             'jam_selesai' => $request->jam_selesai,
             'status_aktif' => $request->status_aktif,
         ]);
+
         return redirect()->route('admin.poli')->with('success', 'Data Berhasil Ditambahkan');
     }
 
     public function updatepoli(Request $request, $id)
     {
         $request->validate([
-            'id_dokter' => 'required',
-            'id_poli' => 'required',
+            'id_dokter' => 'required|exists:dokter,id',
+            'id_poli' => 'required|exists:poli,id',
             'hari' => 'required',
             'jam_mulai' => 'required',
             'jam_selesai' => 'required',
@@ -370,7 +389,7 @@ class AdminController extends Controller
 
         ]);
 
-        $polis = jadwal_periksaModel::with('poli')->find($id);
+        $polis = jadwal_periksaModel::with('poli')->findOrFail($id);
         $polis->update([
             'id_dokter' => $request->id_dokter,
             'id_poli' => $request->id_poli,
@@ -380,7 +399,6 @@ class AdminController extends Controller
             'status_aktif' => $request->status_aktif,
         ]);
 
-
         return redirect()->route('admin.poli')->with('success', 'Data Berhasil di Update');
     }
 
@@ -389,6 +407,7 @@ class AdminController extends Controller
         $poli = jadwal_periksaModel::with('dokter.user', 'poli')->findOrFail($id);
         $dokters = dokterModel::with('user')->get();
         $polis = poliModel::all();
+
         return view('layouts.form.edit_poli', compact('poli', 'dokters', 'polis'));
     }
 
@@ -397,6 +416,7 @@ class AdminController extends Controller
         try {
             $poli = jadwal_periksaModel::findOrFail($id);
             $poli->delete();
+
             return redirect()->route('admin.poli')->with('success', 'Data Berhasil Dihapus');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.poli')->with('error', 'Data Gagal Dihapus');

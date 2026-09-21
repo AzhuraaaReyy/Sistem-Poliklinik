@@ -27,19 +27,15 @@
                     </div>
                     @endif
 
-                    <form action="{{route('lihat.detail.periksa',$periksa->id)}}" method="POST">
-                        @csrf
-                        @method('GET')
-
-                        <div class="card-body">
+                    <div class="card-body">
                             <div class="row">
                                 <div class="form-group col-md-6">
                                     <label for="nama_obat">Nama Pasien</label>
-                                    <input type="text" class="form-control" id="nama_obat" name="nama_obat" value="{{$periksa->pasienModels->user->nama}}" readonly>
+                                    <input type="text" class="form-control" id="nama_obat" name="nama_obat" value="{{ $periksa->pasienModels?->user?->nama ?? '-' }}" readonly>
                                 </div>
                                 <div class="form-group col-md-6">
                                     <label for="kemasan">Nama Dokter</label>
-                                    <input type="text" class="form-control" id="kemasan" name="kemasan" value="{{$periksa->dokter->nama}}" readonly>
+                                    <input type="text" class="form-control" id="kemasan" name="kemasan" value="{{ $periksa->dokter?->nama ?? '-' }}" readonly>
                                 </div>
                             </div>
                             <div class="row">
@@ -49,7 +45,7 @@
                                 </div>
                                 <div class="form-group col-md-4">
                                     <label for="harga">Tanggal Periksa</label>
-                                    <input type="text" class="form-control" id="harga" name="harga" value="{{ \Carbon\Carbon::parse($periksa->tgl_periksa ?? 'N/A')->format('d-m-Y') }}" readonly>
+                                    <input type="text" class="form-control" id="harga" name="harga" value="{{ $periksa->tgl_periksa ? \Carbon\Carbon::parse($periksa->tgl_periksa)->format('d-m-Y') : '-' }}" readonly>
                                 </div>
                                 <div class="form-group col-md-3">
                                     <label for="harga">Selesai Periksa</label>
@@ -88,7 +84,6 @@
                         </div>
                         <!-- /.card-body -->
 
-                    </form>
                     <div class="card-footer">
                         <a href="/list-dokter">
                             <button class="btn btn-warning">Kembali</button>

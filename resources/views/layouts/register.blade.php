@@ -79,7 +79,7 @@
                     </div>
                     <small id="password-error" style="color:red; display:none;">Password tidak cocok!</small>
                     <div class="input-group mb-3">
-                        <input type="text" name="alamat" class="form-control" placeholder="Alamat" required>
+                        <input type="text" name="alamat" class="form-control" placeholder="Alamat" value="{{old('username')}}" required>
                         <div class="input-group-append">
                             <div class="input-group-text">
                                 <span class="fas fa-address-card"></span>

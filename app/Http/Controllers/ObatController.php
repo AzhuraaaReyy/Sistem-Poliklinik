@@ -2,25 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Obat;
+use App\Models\periksa;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class ObatController extends Controller
 {
     public function index()
     {
-        $obats = Obat::all();
-        return view('layouts.dashboard', compact('obats'));
+        $countusers = User::count();
+        $countpasien = User::where('role', 'pasien')->count();
+        $countdokter = User::where('role', 'dokter')->count();
+        $countperiksa = periksa::count();
+
+        return view('layouts.dashboard', compact('countusers', 'countpasien', 'countdokter', 'countperiksa'));
     }
+
     public function obat()
     {
         $obats = Obat::all();
+
         return view('layouts.list_obat', compact('obats'));
     }
 
     public function edit($id)
     {
         $obat = Obat::findOrFail($id);
+
         return view('layouts.edit_obat', compact('obat'));
     }
 

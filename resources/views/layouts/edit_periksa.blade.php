@@ -46,11 +46,11 @@
                     <div class="card-body">
                         <div class="form-group">
                             <label for="nama_pasien">Nama Pasien</label>
-                            <input type="text" class="form-control" id="nama_pasien" name="nama_pasien" value="{{ $periksa->pasienModels->user  ->nama }}" required>
+                            <input type="text" class="form-control" id="nama_pasien" name="nama_pasien" value="{{ $periksa->pasienModels?->user?->nama ?? '-' }}" required>
                         </div>
                         <div class="form-group">
                             <label for="tanggal">Tanggal</label>
-                            <input type="date" class="form-control" id="tanggal" name="tanggal" value="{{ old('tgl_periksa', $periksa->tgl_periksa->format('Y-m-d')) }}" required>
+                            <input type="date" class="form-control" id="tanggal" name="tanggal" value="{{ old('tgl_periksa', $periksa->tgl_periksa?->format('Y-m-d')) }}" required>
                         </div>
                         <div class="form-group">
                             <label for="keluhan">Keluhan</label>

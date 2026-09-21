@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Obat;
 use App\Models\periksa;
+use App\Models\DetailPeriksa;
 
 class PasienController extends Controller
 {
@@ -30,7 +32,9 @@ class PasienController extends Controller
     public function edit($id)
     {
 
-        $periksa = Periksa::with(['pasienModels.user', 'dokter', 'detailPeriksa.obat'])->findOrFail($id);
+        $periksa = Periksa::with(['pasienModels.user', 'dokter', 'detailPeriksa.obat'])
+            ->where('id_dokter', auth()->id())
+            ->findOrFail($id);
         $obats = Obat::all();
 
         // Hitung total harga obat
@@ -54,7 +58,7 @@ class PasienController extends Controller
             }
         }
 
-        return view('layouts.edit_periksa', compact('periksa', 'obats', 'totalHarga'));
+        return view('layouts.edit_periksa', compact('periksa', 'obats', 'totalHarga', 'selectedObatIds'));
     }
     public function update(Request $request, $id)
     {
@@ -63,39 +67,41 @@ class PasienController extends Controller
             'catatan' => 'required|string',
             'obat_ids' => 'required|array',
             'obat_ids.*' => 'exists:obats,id',
-            'totalHarga' => 'required|numeric',
-            'total_obat' => 'required|numeric',
+            'biaya_periksa' => 'required|numeric|min:0',
         ]);
 
-        $periksa = Periksa::with('detailPeriksa')->findOrFail($id);
+        $periksa = Periksa::where('id_dokter', auth()->id())->findOrFail($id);
 
-        // Update data pemeriksaan
-        $periksa->update([
-            'tgl_periksa'     => $request->tanggal,
-            'catatan'         => $request->catatan,
-            'biaya_periksa'   => $request->totalHarga,
-            'totalHarga'      => $request->totalHarga,
-            'total_obat'      => $request->total_obat,
-            'status'          => 'sudah diperiksa',
-            'waktu_diperiksa' => now(),
-        ]);
+        // Hitung ulang total di server agar harga tidak bisa dipalsukan dari klien.
+        $obats = Obat::whereIn('id', $request->obat_ids)->get();
+        $totalHargaObat = $obats->sum('harga');
+        $jumlahObat = $obats->count();
+        $biayaPeriksa = (float) $request->biaya_periksa;
 
-        // Hapus detail lama (agar tidak duplikat)
-        $periksa->detailPeriksa()->delete();
+        DB::transaction(function () use ($periksa, $request, $obats, $totalHargaObat, $jumlahObat, $biayaPeriksa) {
+            $periksa->update([
+                'tgl_periksa'     => $request->tanggal,
+                'catatan'         => $request->catatan,
+                'biaya_periksa'   => $biayaPeriksa,
+                'totalHarga'      => $biayaPeriksa + $totalHargaObat,
+                'total_obat'      => $jumlahObat,
+                'status'          => 'sudah diperiksa',
+                'waktu_diperiksa' => now(),
+            ]);
 
-        // Simpan ulang ke detail_periksas
-        foreach ($request->obat_ids as $obatId) {
-            $obat = \App\Models\Obat::find($obatId);
+            // Hapus detail lama (agar tidak duplikat)
+            $periksa->detailPeriksa()->delete();
 
-            if ($obat) {
-                \App\Models\DetailPeriksa::create([
+            // Simpan ulang ke detail_periksas
+            foreach ($obats as $obat) {
+                DetailPeriksa::create([
                     'id_periksa' => $periksa->id,
                     'id_obat'    => $obat->id,
                     'jumlah'     => 1, // Bisa disesuaikan jika ada input jumlah
                     'subtotal'   => $obat->harga,
                 ]);
             }
-        }
+        });
 
         return redirect()->route('pasien.index')->with('success', 'Data pemeriksaan berhasil diperbarui.');
     }
@@ -105,7 +111,7 @@ class PasienController extends Controller
 
     public function show($id)
     {
-        $periksa = periksa::with(['pasien', 'dokter', 'detail'])->findOrFail($id);
+        $periksa = periksa::with(['pasienModels.user', 'dokter', 'detailPeriksa'])->findOrFail($id);
         return view('layouts.periksa', compact('periksa'));
     }
 }

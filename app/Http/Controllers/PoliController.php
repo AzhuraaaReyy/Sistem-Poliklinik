@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use App\Models\daftar_poliModel;
 use App\Models\periksa;
 use App\Models\poliModel;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,8 @@ class PoliController extends Controller
 {
     public function index()
     {
-        $pasien = pasienModel::with('user')->get();
+        // Hanya tampilkan data pasien milik user yang sedang login.
+        $pasien = pasienModel::with('user')->where('user_id', auth()->id())->get();
         $jadwal = jadwal_periksaModel::with(['dokter.user'])->get();
         $poli = poliModel::all();
 
@@ -30,11 +32,12 @@ class PoliController extends Controller
 
         // Ambil pasien yang login
         $pasien = pasienModel::where('user_id', $user->id)->first();
-        $periksa = periksa::where('id_pasien', $pasien->id)->latest()->first();
 
         if (!$pasien) {
             return redirect()->back()->with('error', 'Pasien tidak ditemukan.');
         }
+
+        $periksa = periksa::where('id_pasien', $pasien->id)->latest()->first();
 
         $jadwal = jadwal_periksaModel::with(['dokter.user'])->get();
         $poli = poliModel::all();
@@ -60,14 +63,8 @@ class PoliController extends Controller
         // Ambil data pasien berdasarkan id_pasien
         $pasien = pasienModel::with('user')->findOrFail($id_pasien);
 
-        // Ambil nama pasien yang terdaftar
-        $nama_pasien_terdaftar = $pasien->user->nama;
-
-        // Ambil nama pasien yang login
-        $nama_pasien_login = auth()->user()->nama;
-
-        // Periksa apakah nama pasien yang login sesuai dengan nama pasien yang terdaftar
-        if ($nama_pasien_terdaftar !== $nama_pasien_login) {
+        // Cek kepemilikan: pastikan pasien yang didaftarkan milik user yang login.
+        if ($pasien->user_id !== auth()->id()) {
             return back()->withErrors(['nama_pasien' => 'Ooopss,Sepertinya anda salah memilih nama!'])->withInput();
         }
 
@@ -78,22 +75,41 @@ class PoliController extends Controller
 
         $tahun = Carbon::parse($tanggal_daftar)->format('Y');
 
-        // Hitung jumlah antrean hari itu di poli yang sama
-        $jumlahAntrianHariIni = daftar_poliModel::whereHas('jadwal', function ($query) use ($id_poli) {
-            $query->where('id_poli', $id_poli);
-        })
-            ->where('tanggal_daftar', $tanggal_daftar)
-            ->count();
+        // Hitung nomor antrean dan simpan dalam transaksi agar tidak duplikat saat bersamaan.
+        // Unique index (tanggal_daftar, no_antrean) menjamin tidak ada nomor ganda; retry bila bentrok.
+        $noAntrian = null;
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            try {
+                $noAntrian = DB::transaction(function () use ($id_pasien, $id_jadwal, $id_poli, $kodePoli, $tanggal_daftar, $tahun) {
+                    // Hitung jumlah antrean hari itu di poli yang sama
+                    $jumlahAntrianHariIni = daftar_poliModel::whereHas('jadwal', function ($query) use ($id_poli) {
+                        $query->where('id_poli', $id_poli);
+                    })
+                        ->where('tanggal_daftar', $tanggal_daftar)
+                        ->lockForUpdate()
+                        ->get()
+                        ->count();
 
-        // Format nomor antrean: 2025-PG-001
-        $noAntrian = $tahun . '-' . $kodePoli . '-' . str_pad($jumlahAntrianHariIni + 1, 3, '0', STR_PAD_LEFT);
+                    // Format nomor antrean: 2025-PG-001
+                    $noAntrian = $tahun . '-' . $kodePoli . '-' . str_pad($jumlahAntrianHariIni + 1, 3, '0', STR_PAD_LEFT);
 
-        daftar_poliModel::create([
-            'id_pasien' => $id_pasien,
-            'id_jadwal' => $id_jadwal,
-            'no_antrean' => $noAntrian,
-            'tanggal_daftar' => $tanggal_daftar,
-        ]);
+                    daftar_poliModel::create([
+                        'id_pasien' => $id_pasien,
+                        'id_jadwal' => $id_jadwal,
+                        'no_antrean' => $noAntrian,
+                        'tanggal_daftar' => $tanggal_daftar,
+                    ]);
+
+                    return $noAntrian;
+                });
+
+                break;
+            } catch (QueryException $e) {
+                if ($attempt === 2) {
+                    throw $e;
+                }
+            }
+        }
 
         return redirect()->route('poli')->with('success', 'Pendaftaran berhasil! No Antrian Anda: ' . $noAntrian);
     }

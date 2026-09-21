@@ -3,18 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\pasienModel;
-use Illuminate\Http\Request;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class RegisterController extends Controller
 {
-
     public function formRegister()
     {
         return view('layouts.register');
     }
+
     public function register(Request $request)
     {
         $request->validate(
@@ -24,7 +24,7 @@ class RegisterController extends Controller
                 'password' => 'required|string|min:8|confirmed',
                 'alamat' => 'required|string|max:20',
                 'no_hp' => 'required|numeric|digits_between:12,13', // Validasi nomor telepon dengan panjang 12 atau 13 digit
-                'no_ktp' => 'required|numeric|digits:16'
+                'no_ktp' => 'required|numeric|digits:16',
             ],
             [
 
@@ -47,14 +47,13 @@ class RegisterController extends Controller
             'no_hp' => $request->no_hp,
 
         ]);
-        $No_RM = pasienModel::generateNoRM();
-        pasienModel::firstOrCreate([
+        pasienModel::createWithNoRm([
             'user_id' => $user->id,
             'no_ktp' => $request->no_ktp,
-            'no_rm' => $No_RM,
         ]);
 
         Auth::login($user);
+        $request->session()->regenerate();
 
         return redirect('/login');
     }

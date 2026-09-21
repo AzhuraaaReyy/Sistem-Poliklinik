@@ -33,7 +33,7 @@ class periksa extends Model
     {
         return [
             'tgl_periksa' => 'date',
-            'total_harga' => 'float',
+            'totalHarga' => 'float',
             'biaya_periksa' => 'float',
             'total_obat' => 'integer',
         ];
@@ -44,10 +44,10 @@ class periksa extends Model
         return $this->belongsTo(User::class, 'id_dokter');
     }
 
-    //relasi ke user sebagai pasien
+    //relasi ke data pasien (kolom id_pasien mengacu ke tabel pasien)
     public function pasien(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'id_pasien');
+        return $this->belongsTo(pasienModel::class, 'id_pasien');
     }
 
     public function detailPeriksa(): HasMany

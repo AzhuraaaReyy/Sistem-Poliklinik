@@ -16,8 +16,11 @@ class DokterController extends Controller
 {
     public function index()
     {
-        $dokters = User::where('role', 'dokter')->get();
-        return view('layouts.dashboard', compact('dokters'));
+        $countusers = User::count();
+        $countpasien = User::where('role', 'pasien')->count();
+        $countdokter = User::where('role', 'dokter')->count();
+        $countperiksa = periksa::count();
+        return view('layouts.dashboard', compact('countusers', 'countpasien', 'countdokter', 'countperiksa'));
     }
     public function byDokter(Request $request)
     {
@@ -27,8 +30,12 @@ class DokterController extends Controller
         // Ambil data pasien dari user yang login
         $pasien = pasienModel::where('user_id', auth()->id())->first();
 
+        if (!$pasien) {
+            return redirect()->back()->with('error', 'Akun ini belum memiliki data pasien.');
+        }
+
         // Ambil riwayat periksa untuk ditampilkan
-        $periksas = Periksa::with('dokter', 'pasien', 'daftarPoli.jadwal.poli')
+        $periksas = Periksa::with('dokter', 'pasienModels.user', 'daftarPoli.jadwal.poli')
             ->where('id_pasien', $pasien->id)
             ->get();
 
@@ -139,7 +146,7 @@ class DokterController extends Controller
             return back()->with('error', 'Akun ini belum terdaftar sebagai dokter.');
         }
         // Cek apakah jadwal yang sama sudah ada
-        $jadwalSudahAda = jadwal_periksaModel::where('id_dokter', $request->id_dokter)
+        $jadwalSudahAda = jadwal_periksaModel::where('id_dokter', $dokter->id)
             ->where('id_poli', $request->id_poli)
             ->where('hari', $request->hari)
             ->where('jam_mulai', $request->jam_mulai)
@@ -165,8 +172,10 @@ class DokterController extends Controller
 
     public function editjadwaldokter($id)
     {
-        $poli = jadwal_periksaModel::with('dokter.user', 'poli')->findOrFail($id);
         $dokters = dokterModel::with('user')->where('user_id', auth()->id())->firstOrFail();
+        $poli = jadwal_periksaModel::with('dokter.user', 'poli')
+            ->where('id_dokter', $dokters->id)
+            ->findOrFail($id);
         $polis = poliModel::all();
         return view('layouts.edit_jadwal_dokter', compact('poli', 'dokters', 'polis'));
     }
@@ -174,14 +183,16 @@ class DokterController extends Controller
     public function updatejadwaldokter(Request $request, $id)
     {
         $request->validate([
-            'id_poli' => 'required',
+            'id_poli' => 'required|exists:poli,id',
             'hari' => 'required',
             'jam_mulai' => 'required',
             'jam_selesai' => 'required',
             'status_aktif' => 'required',
         ]);
-        $dokter = jadwal_periksaModel::findOrFail($id);
-        $dokter->update([
+        $dokterLogin = dokterModel::where('user_id', auth()->id())->firstOrFail();
+        $jadwal = jadwal_periksaModel::where('id_dokter', $dokterLogin->id)->findOrFail($id);
+        $jadwal->update([
+            'id_poli' => $request->id_poli,
             'hari' => $request->hari,
             'jam_mulai' => $request->jam_mulai,
             'jam_selesai' => $request->jam_selesai,

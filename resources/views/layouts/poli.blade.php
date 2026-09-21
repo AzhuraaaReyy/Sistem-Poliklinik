@@ -30,8 +30,7 @@
                          <h5 class="card-header bg-primary">Daftar Poli</h5>
                          <div class="card-body">
 
-                             <form action="" method="POST">
-                                 <input type="hidden" value="145" name="id_pasien">
+                             <div>
                                  <div class="mb-3">
                                      <label for="no_rm" class="form-label">Nomor Rekam Medis</label>
                                      <input type="text " class="form-control" id="no_rm" placeholder="nomor rekam medis" name="no_rm" value="{{$rekam}}" readonly>
@@ -52,7 +51,7 @@
                                      <input type="text " class="form-control" id="keluhan" placeholder="keluhan terakhir" name="keluhan" value="{{ $periksa->keluhan ?? 'belum ada keluhan' }}" readonly>
                                  </div>
 
-                             </form>
+                             </div>
 
                          </div>
                      </div>

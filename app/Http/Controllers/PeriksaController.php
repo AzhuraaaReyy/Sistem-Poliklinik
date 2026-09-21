@@ -12,7 +12,13 @@ class PeriksaController extends Controller
     //
     public function index()
     {
-        $pasienId = auth()->user()->pasienModels->id;
+        $pasien = auth()->user()->pasienModels;
+
+        if (!$pasien) {
+            return redirect('/dokter')->with('error', 'Akun ini belum memiliki data pasien.');
+        }
+
+        $pasienId = $pasien->id;
         $dokters = User::where('role', 'dokter')->get();
         $daftars = daftar_poliModel::all();
         $periksas = Periksa::with('dokter', 'pasienModels.user', 'daftarPoli.jadwal.poli')
@@ -23,7 +29,13 @@ class PeriksaController extends Controller
 
     public function lihatDetailPeriksa($id)
     {
-        $pasienId = auth()->user()->pasienModels->id;
+        $pasien = auth()->user()->pasienModels;
+
+        if (!$pasien) {
+            return redirect('/dokter')->with('error', 'Akun ini belum memiliki data pasien.');
+        }
+
+        $pasienId = $pasien->id;
 
         $periksa = periksa::with('dokter', 'pasienModels.user') // load user dari pasien
             ->where('id_pasien', $pasienId)
